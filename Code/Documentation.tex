@@ -1,0 +1,123 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage{latexsym}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{amsthm}
+%\usepackage[activeacute, spanish]{babel}
+\usepackage[latin1]{inputenc}
+\usepackage{graphicx}
+\usepackage{float,times}
+\usepackage[usenames]{color}
+\usepackage{longtable}
+\usepackage{rotating}
+\usepackage{natbib}
+\usepackage{fancyhdr}
+\usepackage{multirow}
+%\usepackage{appendix}
+\usepackage[margin=2cm]{geometry}
+\usepackage{subfigure}
+\usepackage{hyperref}
+
+\newcommand{\verde}{\color{green}}
+\newcommand{\azul}{\color{blue}}
+\newcommand{\negro}{\color{black}}
+\newcommand{\rojo}{\color{red}}
+\newcommand{\rosa}{\color{darkgreen}}
+\newcommand{\ama}{\color{yellow}}
+
+
+
+\newtheoremstyle{example}{\topsep}{\topsep}%
+     {}%         Body font
+     {}%         Indent amount (empty = no indent, \parindent = para indent)
+     {\bfseries}% Thm head font
+     {}%        Punctuation after thm head
+     {\newline}%     Space after thm head (\newline = linebreak)
+     {\thmname{#1}\thmnumber{ #2}\thmnote{ #3}}%         Thm head spec
+
+\theoremstyle{example}
+\newtheorem{example}{Example}%[section]
+\theoremstyle{theorem}
+\newtheorem{theorem}{Theorem}%[section]
+\theoremstyle{theorem}
+\newtheorem{definition}{Definition}%[section]
+\theoremstyle{proposition}
+\newtheorem{proposition}{Proposition}%[section]
+\theoremstyle{corollary}
+\newtheorem{corollary}{Corollary}%[section]
+
+\renewcommand{\baselinestretch}{1.2}
+
+\renewcommand{\thefigure}{S\arabic{figure}}
+\renewcommand{\theequation}{S\arabic{equation}}
+\renewcommand{\thetable}{S\arabic{table}}
+
+
+\begin{document}
+
+\centerline{\textbf{\Large Documentation for the R code}}
+\centerline{\textbf{\Large ``Bayesian Survival Modelling of University Outcomes''}}
+\centerline{\textbf{\Large C.A. Vallejos and M.F.J. Steel}}
+
+\hfill
+
+Bayesian inference is implemented through the Markov chain Monte Carlo (MCMC) sampler and priors described in Section 4. Inference was implemented in \texttt{R}\footnote{Copyright (C) The R Foundation for Statistical Computing.} version 3.0.1. The code is freely available at \newline \small{\href{https://github.com/catavallejos/UniversitySurvival}{\url{https://github.com/catavallejos/UniversitySurvival}}} \\
+
+\normalsize
+
+This includes the MCMC algorithm and the Bayesian variable selection methods described in the paper. Before using this code, the following libraries must be installed in \texttt{R}: \texttt{BayesLogit}, \texttt{MASS}, \texttt{mvtnorm}, \texttt{Matrix} and \texttt{compiler}. All of these are freely available from standard \texttt{R} repositories and are loaded in \texttt{R} when ``Internal\_Codes.R'' is executed. The last two libraries speed up matrix calculations and the ``for'' loops, respectively. Table \ref{tableNotation} explains the notation used throughout the code.  The implementation was based on three-dimensional arrays, with the third dimension representing the event type.
+
+\begin{table}[H]
+\caption{Notation used throughout the \texttt{R} code}
+\label{tableNotation} \centering \small
+\begin{tabular}{ll}
+  \hline
+  % after \\: \hline or \cline{col1-col2} \cline{col3-col4} ...
+  Variable name    & Description \\
+  \hline
+  \texttt{CATEGORIES}& Number of possible outcomes, excluding censoring (equal to 3 for the PUC dataset) \\
+  \texttt{n}        & Total number of students \\
+  \texttt{nt}        & Total number of multinomial outcomes (i.e.~$\sum t_i$ across all students) \\
+  \texttt{t0}       & Number of period-specific baseline log-odds coefficients $\delta_{rt}$ (for each cause) \\
+  \texttt{k}        & Number of effects (\texttt{t0} + number of covariate effects) \\
+  \texttt{Y}       & Vector of outcomes. Dimension: \texttt{n} $\times 1$ \\
+  \texttt{X}       & Design matrix, including the binary indicators (denoted by $Z$ in the paper). Dimension: \texttt{n} $\times$ \texttt{k}\\
+  \texttt{X.Period} & Design matrix related to period-specific baseline log-odds coefficients $\delta_{rt}$'s only. Dimension \texttt{nt} $\times$ \texttt{t0} \\
+  \texttt{inc}      & Vector containing covariate indicators $\gamma_1,\ldots,\gamma_{k*}$ \\
+  \texttt{beta}    & $\beta^*$ (period-specific baseline log-odds and covariates effects for all event types) \\
+  \texttt{mean.beta}    & Prior mean for $\{\beta^*_1,\ldots,\beta^*_{\cal R}\}$. Dimension: $1 \times$ \texttt{k} $\times$ \texttt{CATEGORIES} \\
+  \texttt{prec.delta}   & Precision matrix for $(\delta_{r1},\ldots,\delta_{rt_0})'$. Dimension: \texttt{t0} $\times$ \texttt{t0}  \\
+  \texttt{df.delta}     & Degrees of freedom for prior of $(\delta_{r1},\ldots,\delta_{rt_0})'$. Default value: 1 \\
+  \texttt{fix.g}   & If \texttt{TRUE}, $g_1,\ldots,g_{\cal R}$ are fixed. Default value: \texttt{FALSE} \\
+  \texttt{prior}   & Choice of hyper prior for $g_r$: \emph{(i)} Benchmark-Beta or \emph{(ii)} Hyper-g/n \citep[see][]{leysteel2012}\\
+  \texttt{N}       & Total number of MCMC iterations \\
+  \texttt{thin}    & Thinning period for MCMC algorithm \\
+  \texttt{burn}    & Burn-in period for MCMC algorithm \\
+%  \texttt{g}       & Denotes either single $g_r$'s ($r=1,\ldots,{\cal R}$) or $(g_1,\ldots,g_{\cal R})'$
+  \texttt{beta0}        & Starting value for $\{\beta^*_1,\ldots,\beta^*_{\cal R}\}$. Dimension: $1 \times$ \texttt{k} $\times$ \texttt{CATEGORIES} \\
+  \texttt{logg0}        & Starting value (log-scale) of $\{g_1,\ldots,g_{\cal R}\}$. Dimension: $1 \times$  \texttt{CATEGORIES}\\
+  \texttt{ls.g0}        & Starting value (log-scale) of the adaptive proposal variance used in Metropolis-Hastings updates  \\
+                        & of $\log(g_1),\ldots,\log(g_{\cal R})$. Dimension: $1 \times$ \texttt{CATEGORIES}\\
+  \texttt{ar}           & Optimal acceptance rate for the adaptive Metropolis-Hastings updates. Default value: 0.44 \\
+ \texttt{ncov} & Indicates how many potential covariates are included in the design matrix \\ 
+ &  (might not match the number of columns due to categorical covariates with more than two levels)   \\
+&  Default value: 8 (as in the PUC dataset) \\
+ \texttt{include} & Vector indicating which covariates from the design matrix are to be included in the model \\
+&  If missing a sampler over the model space will be run. Default:  \texttt{NULL} \\
+ \texttt{gamma} &  $\gamma$ (covariate inclusion indicators) \\
+\end{tabular}
+\end{table}
+
+%{\azul ** Current sampler over the model space was tailored to the PUC dataset (regarding to which columns in the design matrix relate to specific levels of categorical covariates). I need to update this so that it is general + update 'prior' argument in MCMC function + delete DIC, etc from code + Add function to compute MPPIs and model posterior probabilities.  **}
+
+The code is separated into two files. The file ``Internal\_Codes.R'' contains functions that are required for the implementation but the user is not expected to directly interact with these. These functions must be loaded in \texttt{R} before doing any calculations. The main function --- used to run the MCMC algorithm --- is contained in the file ``User\_Codes.R''. In the following, a short description of this function is provided. Its use is illustrated in the file ``Example.R'' using a simulated dataset.
+
+\begin{itemize}
+\item \texttt{MCMC.MLOG}. Adaptive Metropolis-within-Gibbs algorithm  \footnote{Roberts and Rosenthal, 2009, {\it Journal of Computational and Graphical Statistics}} for the competing risks Proportional Odds model used throughout the paper. If not fixed, univariate Gaussian random walk proposals are implemented for $\log(g_1),\ldots,\log(g_{\cal R})$. Arguments: \texttt{N}, \texttt{thin}, \texttt{Y}, \texttt{X}, \texttt{t0}, \texttt{beta0}, \texttt{mean.beta}, \texttt{prec.delta}, \texttt{df.delta}, \texttt{logg0}, \texttt{ls.g0}, \texttt{prior}, \texttt{ar}, \texttt{fix.g}, \texttt{ncov} and \texttt{include}. The output is a list containing the following elements: \texttt{beta} MCMC sample of $\beta^*$ (array of dimension (\texttt{N/thin+1}) $\times$ \texttt{k} $\times$ \texttt{CATEGORIES}), \texttt{gamma} MCMC sample of $\gamma$ (matrix of dimension (\texttt{N/thin+1}) $\times$ \texttt{k}, \texttt{logg} MCMC sample of $\log(g_1),\ldots,\log(g_{\cal R})$ (dimension (\texttt{N/thin+1}) $\times$ \texttt{CATEGORIES}), \texttt{ls.g} stored values for the logarithm of the proposal variances for $\log(g_1),\ldots,\log(g_{\cal R})$ (dimension (\texttt{N/thin+1}) $\times$ \texttt{CATEGORIES}) and \texttt{lambda} MCMC sample of $\lambda_1,\ldots,\lambda_{\cal R})$, which are defined in equation (9) in the paper (dimension (\texttt{N/thin+1}) $\times$ \texttt{CATEGORIES}). Recording \texttt{ls.g} allows the user to evaluate if the adaptive variances have been stabilized. Overall acceptance rates are printed in the \texttt{R} console (if appropriate). This value should be close to the optimal acceptance rate \texttt{ar}.
+\end{itemize}
+
+
+\end{document}
+
