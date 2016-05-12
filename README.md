@@ -4,7 +4,7 @@ This repository contains the R code provided as supplementary material for the m
 
 The code implements Bayesian inference for a discrete time competing risks survival model, developed to analyse data related to university outcomes. This model is based on a multinomial logistic formulation. The implementation also includes a Bayesian Model Average approach for variable selection (low dimensional settings only). 
 
-For a full description of the method see
+For a full description of the method and its application see
 > Bayesian survival modelling of university outcomes. Vallejos, C.A. and Steel, M.F.J. (2016). To appear in *Journal of the Royal Statistical Society - Series A*
 
 
